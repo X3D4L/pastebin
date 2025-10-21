@@ -125,3 +125,4 @@ while ($true) {
     Write-Host "[*] Waiting $ReconnectDelaySeconds seconds before next connection attempt"
     Start-Sleep -Seconds $ReconnectDelaySeconds
 }
+exit
