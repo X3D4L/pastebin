@@ -1,5 +1,5 @@
-$ConnectionTimeoutSeconds = 15
-$ReconnectDelaySeconds = 30
+$ConnectionTimeoutSeconds = 3
+$ReconnectDelaySeconds = 1
 $HeartbeatIntervalSeconds = 60
 $CommandLoopSleepMs = 100
 
